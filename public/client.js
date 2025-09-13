@@ -1,4 +1,6 @@
 const captions = window.document.getElementById("captions");
+const fullTranscriptEl = document.getElementById("full-transcript");
+const wordCountEl = document.getElementById("word-count");
 
 let fullTranscriptText = "";
 let startTime;
@@ -7,7 +9,7 @@ let currentTranscript = "";
 
 function updateWordCount() {
   const words = fullTranscriptText.trim().split(/\s+/).filter(word => word.length > 0).length;
-  document.getElementById("word-count").innerText = `Words: ${words}`;
+  wordCountEl.textContent = `Words: ${words}`;
 }
 
 function formatTime(seconds) {
@@ -67,10 +69,9 @@ async function closeMicrophone(microphone) {
   if (currentTranscript.trim() !== "") {
     fullTranscriptText += currentTranscript.trim() + "\n";
     currentTranscript = "";
-    document.getElementById("full-transcript").innerText = fullTranscriptText;
+        fullTranscriptEl.textContent = fullTranscriptText;
     updateWordCount();
-    const transcriptDiv = document.getElementById("full-transcript");
-    transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+    fullTranscriptEl.scrollTop = fullTranscriptEl.scrollHeight;
   }
   document.getElementById("timer").innerText = "00:00:00";
 }
@@ -124,18 +125,15 @@ window.addEventListener("load", async () => {
         if (currentTranscript.trim().match(/[.!?]\s*$/)) {
           fullTranscriptText += currentTranscript.trim() + "\n";
           currentTranscript = "";
+          // Update full transcript display only when sentence completes
+          fullTranscriptEl.textContent = fullTranscriptText;
+          updateWordCount();
+          // Auto-scroll to bottom
+          fullTranscriptEl.scrollTop = fullTranscriptEl.scrollHeight;
         }
 
-        // Update live captions
+        // Update live captions immediately
         captions.innerHTML = `<span>${currentTranscript}</span>`;
-
-        // Update full transcript display
-        document.getElementById("full-transcript").innerText = fullTranscriptText + currentTranscript;
-        updateWordCount();
-
-        // Auto-scroll to bottom
-        const transcriptDiv = document.getElementById("full-transcript");
-        transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
       }
     });
 
@@ -170,8 +168,8 @@ window.addEventListener("load", async () => {
   document.getElementById("clear-btn").addEventListener("click", () => {
     fullTranscriptText = "";
     currentTranscript = "";
-    document.getElementById("full-transcript").innerText = "";
-    document.getElementById("word-count").innerText = "Words: 0";
+    fullTranscriptEl.innerText = "";
+    wordCountEl.innerText = "Words: 0";
     captions.innerHTML = "";
   });
 
