@@ -39,6 +39,11 @@
       <div id="timer">00:00:00</div>
       <div id="status">Status: Connecting...</div>
       <div class="controls">
+        <label for="model-select">AI Model:</label>
+        <select id="model-select">
+          <option value="nova-3-medical">Medical</option>
+          <option value="nova-3-general">General</option>
+        </select>
         <label><input type="checkbox" id="buffer-toggle"> Enable buffering (0.5s delay for complete phrases)</label>
       </div>
     </section>
