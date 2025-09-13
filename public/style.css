@@ -183,7 +183,7 @@ body {
   font-size: 1.5rem;
 }
 
-#full-transcript {
+textarea#full-transcript {
   flex: 1;
   overflow-y: auto;
   margin-bottom: 1rem;
@@ -194,6 +194,11 @@ body {
   border-radius: 5px;
   min-height: 200px;
   -webkit-overflow-scrolling: touch;
+  resize: none;
+  white-space: pre-wrap;
+  font-family: inherit;
+  border: none;
+  color: white;
 }
 
 #copy-btn {
@@ -365,7 +370,7 @@ body {
     font-size: 1.8rem;
   }
 
-  #full-transcript {
+  textarea#full-transcript {
     font-size: 1.1rem;
     min-height: 250px;
   }

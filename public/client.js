@@ -10,12 +10,22 @@ let captionTimeout;
 
 function addSentence() {
   if (currentTranscript.trim()) {
-    fullTranscriptText += currentTranscript.trim() + '\n\n';
+    const text = currentTranscript.trim();
+    const words = text.split(/\s+/).filter(word => word.length > 0);
+    let formatted = '';
+    for (let i = 0; i < words.length; i += 32) {
+      formatted += words.slice(i, i + 32).join(' ') + '\n';
+    }
+    fullTranscriptText += formatted + '\n';
     currentTranscript = " ";
-    fullTranscriptEl.textContent = fullTranscriptText;
+    fullTranscriptEl.value = fullTranscriptText;
     updateWordCount();
     fullTranscriptEl.scrollTop = fullTranscriptEl.scrollHeight;
   }
+}
+
+function updateWordCount() {
+  wordCountEl.innerText = `Words: ${getWordCount(fullTranscriptEl.value)}`;
 }
 
 function formatTime(seconds) {
@@ -50,6 +60,12 @@ async function openMicrophone(microphone, socket) {
 
   microphone.onstart = () => {
     console.log("client: microphone opened");
+    if (!fullTranscriptEl.readOnly) {
+      fullTranscriptText = fullTranscriptEl.value;
+      currentTranscript = "";
+      updateWordCount();
+    }
+    fullTranscriptEl.readOnly = true;
     document.body.classList.add("recording");
     startTime = Date.now();
     timerInterval = setInterval(updateTimer, 1000);
@@ -80,6 +96,9 @@ async function closeMicrophone(microphone) {
   }
   captions.textContent = "";
   document.getElementById("timer").innerText = "00:00:00";
+  fullTranscriptEl.value = fullTranscriptText;
+  updateWordCount();
+  fullTranscriptEl.readOnly = false;
 }
 
 async function start(socket) {
@@ -135,9 +154,11 @@ window.addEventListener("load", async () => {
         captions.textContent = currentTranscript;
 
         // Update full transcript in real time
-        fullTranscriptEl.textContent = fullTranscriptText + currentTranscript;
-        updateWordCount();
-        fullTranscriptEl.scrollTop = fullTranscriptEl.scrollHeight;
+        if (fullTranscriptEl.readOnly) {
+          fullTranscriptEl.value = fullTranscriptText + currentTranscript;
+          updateWordCount();
+          fullTranscriptEl.scrollTop = fullTranscriptEl.scrollHeight;
+        }
 
         // Clear existing timeout
         if (captionTimeout) clearTimeout(captionTimeout);
@@ -146,6 +167,11 @@ window.addEventListener("load", async () => {
         captionTimeout = setTimeout(() => {
           captions.textContent = "";
         }, 10000);
+
+        // Check if the current transcript has 32 or more words, then add as sentence
+        if (getWordCount(currentTranscript) >= 32) {
+          addSentence();
+        }
 
         // Check if the current transcript ends with a sentence terminator
         if (/[.!?]$/.test(currentTranscript.trim())) {
@@ -170,7 +196,7 @@ window.addEventListener("load", async () => {
   });
 
   document.getElementById("copy-btn").addEventListener("click", async () => {
-    const text = fullTranscriptText + currentTranscript;
+    const text = fullTranscriptEl.value;
     try {
       await navigator.clipboard.writeText(text);
       alert("Transcript copied to clipboard!");
@@ -182,13 +208,13 @@ window.addEventListener("load", async () => {
   document.getElementById("clear-btn").addEventListener("click", () => {
     fullTranscriptText = "";
     currentTranscript = "";
-    fullTranscriptEl.innerText = "";
+    fullTranscriptEl.value = "";
     wordCountEl.innerText = "Words: 0";
     captions.innerHTML = "";
   });
 
   document.getElementById("save-btn").addEventListener("click", () => {
-    const text = fullTranscriptText + currentTranscript;
+    const text = fullTranscriptEl.value;
     const blob = new Blob([text], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
