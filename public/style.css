@@ -148,7 +148,7 @@ body {
 }
 
 .captions {
-  font: 2rem/1.25 Verdana, Geneva, Tahoma, sans-serif;
+  font: 3rem/1.25 Verdana, Geneva, Tahoma, sans-serif;
   text-transform: uppercase;
   text-align: center;
   font-weight: 400;
@@ -254,6 +254,22 @@ body {
   color: #fff;
   margin-top: 10px;
   font-weight: bold;
+}
+
+#status {
+  font-size: 1rem;
+  color: #ccc;
+  margin-top: 5px;
+}
+
+.controls {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.controls label {
+  color: white;
+  font-size: 0.9rem;
 }
 
 @media (max-width: 768px) {

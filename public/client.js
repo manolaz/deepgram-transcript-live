@@ -5,6 +5,18 @@ let startTime;
 let timerInterval;
 let bufferedTranscript = "";
 let displayTimeoutId;
+let bufferingEnabled   document.getElementById("clear-btn").addEventListener("click", () => {
+    fullTranscriptText = "";
+    document.getElementById("full-transcript").innerText = "";
+    document.getElementById("word-count").innerText = "Words: 0";
+  });
+
+  document.getElementById("buffer-toggle").checked = bufferingEnabled;
+  document.getElementById("buffer-toggle").addEventListener("change", (e) => {
+    bufferingEnabled = e.target.checked;
+  });
+
+  document.getElementById("copy-btn").addEventListener("click", async () => {
 
 function updateWordCount() {
   const lines = fullTranscriptText.trim().split('\n');
@@ -33,11 +45,16 @@ function updateTimer() {
 }
 
 async function getMicrophone() {
-  const userMedia = await navigator.mediaDevices.getUserMedia({
-    audio: true,
-  });
-
-  return new MediaRecorder(userMedia);
+  try {
+    const userMedia = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+    });
+    return new MediaRecorder(userMedia);
+  } catch (error) {
+    console.error("Error accessing microphone:", error);
+    alert("Microphone access denied or unavailable. Please check your permissions and try again.");
+    throw error;
+  }
 }
 
 async function openMicrophone(microphone, socket) {
@@ -68,8 +85,8 @@ async function closeMicrophone(microphone) {
   clearInterval(timerInterval);
   if (displayTimeoutId) {
     clearTimeout(displayTimeoutId);
-    // Display any remaining buffered transcript
-    if (bufferedTranscript.trim() !== "") {
+    // Display any remaining buffered transcript if buffering is enabled
+    if (bufferingEnabled && bufferedTranscript.trim() !== "") {
       captions.innerHTML = `<span>${bufferedTranscript.trim()}</span>`;
       const currentTime = formatTime(Math.floor((Date.now() - startTime) / 1000));
       fullTranscriptText += `[${currentTime}] ${bufferedTranscript.trim()}\n`;
@@ -114,10 +131,11 @@ window.addEventListener("load", async () => {
   const { createClient } = deepgram;
   const _deepgram = createClient({ accessToken: token });
 
-  const socket = _deepgram.listen.live({ model: "nova-3", smart_format: true });
+  const socket = _deepgram.listen.live({ model: "nova-3", smart_format: true, diarize: true });
 
   socket.on("open", async () => {
     console.log("client: connected to websocket");
+    document.getElementById("status").innerText = "Status: Connected";
 
     socket.on("Results", (data) => {
       console.log(data);
@@ -125,45 +143,67 @@ window.addEventListener("load", async () => {
       const transcript = data.channel.alternatives[0].transcript;
 
       if (transcript !== "") {
-        // Accumulate transcript in buffer
-        bufferedTranscript += transcript + " ";
+        if (bufferingEnabled) {
+          // Accumulate transcript in buffer
+          bufferedTranscript += transcript + " ";
 
-        // Clear any existing timeout
-        if (displayTimeoutId) {
-          clearTimeout(displayTimeoutId);
-        }
-
-        // Set a new timeout to display after 5 seconds
-        displayTimeoutId = setTimeout(() => {
-          if (bufferedTranscript.trim() !== "") {
-            // Display the buffered transcript
-            captions.innerHTML = `<span>${bufferedTranscript.trim()}</span>`;
-            const currentTime = formatTime(Math.floor((Date.now() - startTime) / 1000));
-            fullTranscriptText += `[${currentTime}] ${bufferedTranscript.trim()}\n`;
-            document.getElementById("full-transcript").innerText = fullTranscriptText;
-            updateWordCount();
-            // Auto-scroll to bottom
-            const transcriptDiv = document.getElementById("full-transcript");
-            transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
-            // Reset buffer
-            bufferedTranscript = "";
+          // Clear any existing timeout
+          if (displayTimeoutId) {
+            clearTimeout(displayTimeoutId);
           }
-        }, 5000); // 5 seconds delay
+
+          // Set a new timeout to display after 0.5 seconds
+          displayTimeoutId = setTimeout(() => {
+            if (bufferedTranscript.trim() !== "") {
+              // Display the buffered transcript
+              captions.innerHTML = `<span>${bufferedTranscript.trim()}</span>`;
+              const currentTime = formatTime(Math.floor((Date.now() - startTime) / 1000));
+              fullTranscriptText += `[${currentTime}] ${bufferedTranscript.trim()}\n`;
+              document.getElementById("full-transcript").innerText = fullTranscriptText;
+              updateWordCount();
+              // Auto-scroll to bottom
+              const transcriptDiv = document.getElementById("full-transcript");
+              transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+              // Reset buffer
+              bufferedTranscript = "";
+            }
+          }, 500); // 0.5 seconds delay
+        } else {
+          // Display immediately
+          captions.innerHTML = transcript ? `<span>${transcript}</span>` : "";
+          const currentTime = formatTime(Math.floor((Date.now() - startTime) / 1000));
+          fullTranscriptText += `[${currentTime}] ${transcript}\n`;
+          document.getElementById("full-transcript").innerText = fullTranscriptText;
+          updateWordCount();
+          // Auto-scroll to bottom
+          const transcriptDiv = document.getElementById("full-transcript");
+          transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+        }
       }
     });
 
-    socket.on("error", (e) => console.error(e));
+    socket.on("error", (e) => {
+      console.error("WebSocket error:", e);
+      document.getElementById("status").innerText = "Status: Error - Check connection";
+      alert("Connection error. Please refresh and try again.");
+    });
 
     socket.on("warning", (e) => console.warn(e));
 
     socket.on("Metadata", (e) => console.log(e));
 
-    socket.on("close", (e) => console.log(e));
+    socket.on("close", (e) => {
+      console.log("WebSocket closed:", e);
+      document.getElementById("status").innerText = "Status: Disconnected";
+    });
 
     await start(socket);
   });
 
-  document.getElementById("copy-btn").addEventListener("click", async () => {
+  document.getElementById("buffer-toggle").checked = bufferingEnabled;
+  document.getElementById("buffer-toggle").addEventListener("change", (e) => {
+    bufferingEnabled = e.target.checked;
+  });
     const text = fullTranscriptText;
     try {
       await navigator.clipboard.writeText(text);
