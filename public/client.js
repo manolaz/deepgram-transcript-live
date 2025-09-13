@@ -6,6 +6,7 @@ let fullTranscriptText = "";
 let startTime;
 let timerInterval;
 let currentTranscript = "";
+let captionTimeout;
 
 function addSentence() {
   if (currentTranscript.trim()) {
@@ -72,6 +73,12 @@ async function closeMicrophone(microphone) {
   clearInterval(timerInterval);
   // If there's remaining current transcript, add it as a sentence
   addSentence();
+  // Clear caption timeout and captions
+  if (captionTimeout) {
+    clearTimeout(captionTimeout);
+    captionTimeout = null;
+  }
+  captions.textContent = "";
   document.getElementById("timer").innerText = "00:00:00";
 }
 
@@ -118,13 +125,21 @@ window.addEventListener("load", async () => {
       if (transcript) {
         currentTranscript += transcript;
 
+        // Update live captions immediately
+        captions.textContent = currentTranscript;
+
+        // Clear existing timeout
+        if (captionTimeout) clearTimeout(captionTimeout);
+
+        // Set new timeout to clear captions after 10 seconds of no update
+        captionTimeout = setTimeout(() => {
+          captions.textContent = "";
+        }, 10000);
+
         // Check if the current transcript ends with a sentence terminator
         if (/[.!?]$/.test(currentTranscript.trim())) {
           addSentence();
         }
-
-        // Update live captions immediately
-        captions.textContent = currentTranscript;
       }
     });
 
