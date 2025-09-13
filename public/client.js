@@ -134,6 +134,11 @@ window.addEventListener("load", async () => {
         // Update live captions immediately
         captions.textContent = currentTranscript;
 
+        // Update full transcript in real time
+        fullTranscriptEl.textContent = fullTranscriptText + currentTranscript;
+        updateWordCount();
+        fullTranscriptEl.scrollTop = fullTranscriptEl.scrollHeight;
+
         // Clear existing timeout
         if (captionTimeout) clearTimeout(captionTimeout);
 
