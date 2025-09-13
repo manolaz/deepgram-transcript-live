@@ -3,31 +3,11 @@ const captions = window.document.getElementById("captions");
 let fullTranscriptText = "";
 let startTime;
 let timerInterval;
-let bufferedTranscript = "";
-let displayTimeoutId;
-let bufferingEnabled   document.getElementById("clear-btn").addEventListener("click", () => {
-    fullTranscriptText = "";
-    document.getElementById("full-transcript").innerText = "";
-    document.getElementById("word-count").innerText = "Words: 0";
-  });
-
-  document.getElementById("buffer-toggle").checked = bufferingEnabled;
-  document.getElementById("buffer-toggle").addEventListener("change", (e) => {
-    bufferingEnabled = e.target.checked;
-  });
-
-  document.getElementById("copy-btn").addEventListener("click", async () => {
+let currentTranscript = "";
 
 function updateWordCount() {
-  const lines = fullTranscriptText.trim().split('\n');
-  let totalWords = 0;
-  lines.forEach(line => {
-    // Remove timestamp [HH:MM:SS] from the beginning
-    const text = line.replace(/^\[\d{2}:\d{2}:\d{2}\]\s*/, '');
-    const words = text.trim().split(/\s+/).filter(word => word.length > 0).length;
-    totalWords += words;
-  });
-  document.getElementById("word-count").innerText = `Words: ${totalWords}`;
+  const words = fullTranscriptText.trim().split(/\s+/).filter(word => word.length > 0).length;
+  document.getElementById("word-count").innerText = `Words: ${words}`;
 }
 
 function formatTime(seconds) {
@@ -83,19 +63,14 @@ async function openMicrophone(microphone, socket) {
 async function closeMicrophone(microphone) {
   microphone.stop();
   clearInterval(timerInterval);
-  if (displayTimeoutId) {
-    clearTimeout(displayTimeoutId);
-    // Display any remaining buffered transcript if buffering is enabled
-    if (bufferingEnabled && bufferedTranscript.trim() !== "") {
-      captions.innerHTML = `<span>${bufferedTranscript.trim()}</span>`;
-      const currentTime = formatTime(Math.floor((Date.now() - startTime) / 1000));
-      fullTranscriptText += `[${currentTime}] ${bufferedTranscript.trim()}\n`;
-      document.getElementById("full-transcript").innerText = fullTranscriptText;
-      updateWordCount();
-      const transcriptDiv = document.getElementById("full-transcript");
-      transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
-      bufferedTranscript = "";
-    }
+  // If there's remaining current transcript, add it as a sentence
+  if (currentTranscript.trim() !== "") {
+    fullTranscriptText += currentTranscript.trim() + "\n";
+    currentTranscript = "";
+    document.getElementById("full-transcript").innerText = fullTranscriptText;
+    updateWordCount();
+    const transcriptDiv = document.getElementById("full-transcript");
+    transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
   }
   document.getElementById("timer").innerText = "00:00:00";
 }
@@ -131,7 +106,7 @@ window.addEventListener("load", async () => {
   const { createClient } = deepgram;
   const _deepgram = createClient({ accessToken: token });
 
-  const socket = _deepgram.listen.live({ model: "nova-3", smart_format: true, diarize: true });
+  const socket = _deepgram.listen.live({ model: "nova-3", smart_format: true });
 
   socket.on("open", async () => {
     console.log("client: connected to websocket");
@@ -143,42 +118,24 @@ window.addEventListener("load", async () => {
       const transcript = data.channel.alternatives[0].transcript;
 
       if (transcript !== "") {
-        if (bufferingEnabled) {
-          // Accumulate transcript in buffer
-          bufferedTranscript += transcript + " ";
+        currentTranscript += transcript + " ";
 
-          // Clear any existing timeout
-          if (displayTimeoutId) {
-            clearTimeout(displayTimeoutId);
-          }
-
-          // Set a new timeout to display after 0.5 seconds
-          displayTimeoutId = setTimeout(() => {
-            if (bufferedTranscript.trim() !== "") {
-              // Display the buffered transcript
-              captions.innerHTML = `<span>${bufferedTranscript.trim()}</span>`;
-              const currentTime = formatTime(Math.floor((Date.now() - startTime) / 1000));
-              fullTranscriptText += `[${currentTime}] ${bufferedTranscript.trim()}\n`;
-              document.getElementById("full-transcript").innerText = fullTranscriptText;
-              updateWordCount();
-              // Auto-scroll to bottom
-              const transcriptDiv = document.getElementById("full-transcript");
-              transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
-              // Reset buffer
-              bufferedTranscript = "";
-            }
-          }, 500); // 0.5 seconds delay
-        } else {
-          // Display immediately
-          captions.innerHTML = transcript ? `<span>${transcript}</span>` : "";
-          const currentTime = formatTime(Math.floor((Date.now() - startTime) / 1000));
-          fullTranscriptText += `[${currentTime}] ${transcript}\n`;
-          document.getElementById("full-transcript").innerText = fullTranscriptText;
-          updateWordCount();
-          // Auto-scroll to bottom
-          const transcriptDiv = document.getElementById("full-transcript");
-          transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+        // Check if the current transcript ends with a sentence terminator
+        if (currentTranscript.trim().match(/[.!?]\s*$/)) {
+          fullTranscriptText += currentTranscript.trim() + "\n";
+          currentTranscript = "";
         }
+
+        // Update live captions
+        captions.innerHTML = `<span>${currentTranscript}</span>`;
+
+        // Update full transcript display
+        document.getElementById("full-transcript").innerText = fullTranscriptText + currentTranscript;
+        updateWordCount();
+
+        // Auto-scroll to bottom
+        const transcriptDiv = document.getElementById("full-transcript");
+        transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
       }
     });
 
@@ -200,11 +157,8 @@ window.addEventListener("load", async () => {
     await start(socket);
   });
 
-  document.getElementById("buffer-toggle").checked = bufferingEnabled;
-  document.getElementById("buffer-toggle").addEventListener("change", (e) => {
-    bufferingEnabled = e.target.checked;
-  });
-    const text = fullTranscriptText;
+  document.getElementById("copy-btn").addEventListener("click", async () => {
+    const text = fullTranscriptText + currentTranscript;
     try {
       await navigator.clipboard.writeText(text);
       alert("Transcript copied to clipboard!");
@@ -215,12 +169,14 @@ window.addEventListener("load", async () => {
 
   document.getElementById("clear-btn").addEventListener("click", () => {
     fullTranscriptText = "";
+    currentTranscript = "";
     document.getElementById("full-transcript").innerText = "";
     document.getElementById("word-count").innerText = "Words: 0";
+    captions.innerHTML = "";
   });
 
   document.getElementById("save-btn").addEventListener("click", () => {
-    const text = fullTranscriptText;
+    const text = fullTranscriptText + currentTranscript;
     const blob = new Blob([text], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
