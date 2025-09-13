@@ -5,8 +5,15 @@ let startTime;
 let timerInterval;
 
 function updateWordCount() {
-  const words = fullTranscriptText.trim().split(/\s+/).filter(word => word.length > 0).length;
-  document.getElementById("word-count").innerText = `Words: ${words}`;
+  const lines = fullTranscriptText.trim().split('\n');
+  let totalWords = 0;
+  lines.forEach(line => {
+    // Remove timestamp [HH:MM:SS] from the beginning
+    const text = line.replace(/^\[\d{2}:\d{2}:\d{2}\]\s*/, '');
+    const words = text.trim().split(/\s+/).filter(word => word.length > 0).length;
+    totalWords += words;
+  });
+  document.getElementById("word-count").innerText = `Words: ${totalWords}`;
 }
 
 function formatTime(seconds) {
@@ -103,7 +110,8 @@ window.addEventListener("load", async () => {
 
       if (transcript !== "") {
         captions.innerHTML = transcript ? `<span>${transcript}</span>` : "";
-        fullTranscriptText += transcript + " ";
+        const currentTime = formatTime(Math.floor((Date.now() - startTime) / 1000));
+        fullTranscriptText += `[${currentTime}] ${transcript}\n`;
         document.getElementById("full-transcript").innerText = fullTranscriptText;
         updateWordCount();
         // Auto-scroll to bottom
