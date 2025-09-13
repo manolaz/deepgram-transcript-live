@@ -40,11 +40,11 @@
       <div class="controls">
         <label for="model-select">AI Model:</label>
         <select id="model-select">
+          <option value="nova-2-meeting" selected="selected">Meeting-v2</option>
           <option value="nova-3-medical">Medical-v3</option>
           <option value="nova-3-general">General-v3</option>
           <option value="nova-2-medical">Medical-v2</option>
           <option value="nova-2-general">General-v2</option>
-          <option value="nova-2-meeting">Meeting-v2</option>
           <option value="nova-2-video">Video-v2</option>
         </select>
         <label><input type="checkbox" id="buffer-toggle"> Enable buffering (0.5s delay for complete phrases)</label>
@@ -54,7 +54,7 @@
       <div id="transcript-zone">
         <h3>Full Transcript</h3>
         <div id="word-count">Words: 0</div>
-        <pre id="full-transcript"></pre>
+        <textarea id="full-transcript"></textarea>
         <div class="button-group">
           <button id="copy-btn">Copy Transcript</button>
           <button id="save-btn">Save Transcript</button>
