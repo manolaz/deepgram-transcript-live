@@ -6,10 +6,16 @@ let fullTranscriptText = "";
 let startTime;
 let timerInterval;
 let currentTranscript = "";
+let captionTimeout;
 
-function updateWordCount() {
-  const words = fullTranscriptText.trim().split(/\s+/).filter(word => word.length > 0).length;
-  wordCountEl.textContent = `Words: ${words}`;
+function addSentence() {
+  if (currentTranscript.trim()) {
+    fullTranscriptText += currentTranscript.trim() + "\n";
+    currentTranscript = "";
+    fullTranscriptEl.textContent = fullTranscriptText;
+    updateWordCount();
+    fullTranscriptEl.scrollTop = fullTranscriptEl.scrollHeight;
+  }
 }
 
 function formatTime(seconds) {
@@ -66,13 +72,13 @@ async function closeMicrophone(microphone) {
   microphone.stop();
   clearInterval(timerInterval);
   // If there's remaining current transcript, add it as a sentence
-  if (currentTranscript.trim() !== "") {
-    fullTranscriptText += currentTranscript.trim() + "\n";
-    currentTranscript = "";
-        fullTranscriptEl.textContent = fullTranscriptText;
-    updateWordCount();
-    fullTranscriptEl.scrollTop = fullTranscriptEl.scrollHeight;
+  addSentence();
+  // Clear caption timeout and captions
+  if (captionTimeout) {
+    clearTimeout(captionTimeout);
+    captionTimeout = null;
   }
+  captions.textContent = "";
   document.getElementById("timer").innerText = "00:00:00";
 }
 
@@ -107,33 +113,33 @@ window.addEventListener("load", async () => {
   const { createClient } = deepgram;
   const _deepgram = createClient({ accessToken: token });
 
-  const socket = _deepgram.listen.live({ model: "nova-3", smart_format: true });
+  const socket = _deepgram.listen.live({ model: "nova-3-medical", smart_format: true });
 
   socket.on("open", async () => {
     console.log("client: connected to websocket");
     document.getElementById("status").innerText = "Status: Connected";
 
     socket.on("Results", (data) => {
-      console.log(data);
-
       const transcript = data.channel.alternatives[0].transcript;
 
-      if (transcript !== "") {
-        currentTranscript += transcript + " ";
-
-        // Check if the current transcript ends with a sentence terminator
-        if (currentTranscript.trim().match(/[.!?]\s*$/)) {
-          fullTranscriptText += currentTranscript.trim() + "\n";
-          currentTranscript = "";
-          // Update full transcript display only when sentence completes
-          fullTranscriptEl.textContent = fullTranscriptText;
-          updateWordCount();
-          // Auto-scroll to bottom
-          fullTranscriptEl.scrollTop = fullTranscriptEl.scrollHeight;
-        }
+      if (transcript) {
+        currentTranscript += transcript;
 
         // Update live captions immediately
-        captions.innerHTML = `<span>${currentTranscript}</span>`;
+        captions.textContent = currentTranscript;
+
+        // Clear existing timeout
+        if (captionTimeout) clearTimeout(captionTimeout);
+
+        // Set new timeout to clear captions after 10 seconds of no update
+        captionTimeout = setTimeout(() => {
+          captions.textContent = "";
+        }, 10000);
+
+        // Check if the current transcript ends with a sentence terminator
+        if (/[.!?]$/.test(currentTranscript.trim())) {
+          addSentence();
+        }
       }
     });
 
