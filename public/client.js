@@ -10,7 +10,7 @@ let captionTimeout;
 
 function addSentence() {
   if (currentTranscript.trim()) {
-    fullTranscriptText += currentTranscript.trim() + "\n";
+    fullTranscriptText += currentTranscript.trim() + '\n\n';
     currentTranscript = "";
     fullTranscriptEl.textContent = fullTranscriptText;
     updateWordCount();
@@ -120,7 +120,6 @@ window.addEventListener("load", async () => {
 
   socket.on("open", async () => {
     console.log("client: connected to websocket");
-    document.getElementById("status").innerText = "Status: Connected";
 
     socket.on("Results", (data) => {
       const transcript = data.channel.alternatives[0].transcript;
@@ -148,8 +147,6 @@ window.addEventListener("load", async () => {
 
     socket.on("error", (e) => {
       console.error("WebSocket error:", e);
-      document.getElementById("status").innerText = "Status: Error - Check connection";
-      alert("Connection error. Please refresh and try again.");
     });
 
     socket.on("warning", (e) => console.warn(e));
@@ -158,7 +155,6 @@ window.addEventListener("load", async () => {
 
     socket.on("close", (e) => {
       console.log("WebSocket closed:", e);
-      document.getElementById("status").innerText = "Status: Disconnected";
     });
 
     await start(socket);
@@ -188,7 +184,7 @@ window.addEventListener("load", async () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'transcript.txt';
+    a.download = 'transcript.md';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
