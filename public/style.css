@@ -31,6 +31,7 @@ body {
 .main-content {
   display: flex;
   flex: 1;
+  flex-direction: column;
   gap: 20px;
   padding: 20px;
   box-sizing: border-box;
@@ -41,7 +42,6 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1;
   min-width: 300px;
 }
 
@@ -88,6 +88,7 @@ body {
   position: relative;
   cursor: pointer;
   z-index: 1;
+  touch-action: manipulation;
 }
 
 .recording .button {
@@ -161,7 +162,7 @@ body {
   color: white;
   background-color: rgba(0, 0, 0, 0.7);
   border-radius: 10px;
-  max-width: 400px;
+  max-width: 100%;
   word-wrap: break-word;
 }
 
@@ -192,6 +193,7 @@ body {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 5px;
   min-height: 200px;
+  -webkit-overflow-scrolling: touch;
 }
 
 #copy-btn {
@@ -202,6 +204,7 @@ body {
   border-radius: 5px;
   cursor: pointer;
   font-size: 1rem;
+  touch-action: manipulation;
 }
 
 #copy-btn:hover {
@@ -217,6 +220,7 @@ body {
   cursor: pointer;
   font-size: 1rem;
   margin-left: 10px;
+  touch-action: manipulation;
 }
 
 #clear-btn:hover {
@@ -231,6 +235,7 @@ body {
   border-radius: 5px;
   cursor: pointer;
   font-size: 1rem;
+  touch-action: manipulation;
 }
 
 #save-btn:hover {
@@ -273,9 +278,8 @@ body {
 
 @media (max-width: 768px) {
   .main-content {
-    flex-direction: column;
-    gap: 10px;
-    padding: 10px;
+    gap: 15px;
+    padding: 15px;
   }
 
   .record-section {
@@ -286,15 +290,100 @@ body {
     order: 2;
   }
 
+  .brand-header {
+    padding: 15px;
+  }
+
+  .brand-header h1 {
+    font-size: 2rem;
+  }
+
+  .brand-header p {
+    font-size: 1rem;
+  }
+
+  .button {
+    width: 150px;
+    height: 150px;
+  }
+
+  #circlein {
+    width: 130px;
+    height: 130px;
+    top: 10px;
+    left: 10px;
+  }
+
+  .mic-icon {
+    height: 70px;
+    top: 30px;
+    left: 30px;
+  }
+
   .captions {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
   }
 
   .captions span {
+    padding: 0.75rem 1.25rem;
     max-width: 100%;
   }
 
+  #timer {
+    font-size: 1.5rem;
+  }
+
+  #status {
+    font-size: 1.2rem;
+  }
+
+  .controls {
+    margin-top: 15px;
+  }
+
+  .controls label {
+    font-size: 1rem;
+    display: block;
+    text-align: left;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .controls input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+  }
+
   #transcript-zone {
-    height: 300px;
+    padding: 1rem;
+  }
+
+  #transcript-zone h3 {
+    font-size: 1.8rem;
+  }
+
+  #full-transcript {
+    font-size: 1.1rem;
+    min-height: 250px;
+  }
+
+  #copy-btn,
+  #save-btn,
+  #clear-btn {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    min-height: 48px;
+  }
+
+  .button-group {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  #word-count {
+    font-size: 1rem;
   }
 }
