@@ -3,6 +3,8 @@ const captions = window.document.getElementById("captions");
 let fullTranscriptText = "";
 let startTime;
 let timerInterval;
+let bufferedTranscript = "";
+let displayTimeoutId;
 
 function updateWordCount() {
   const lines = fullTranscriptText.trim().split('\n');
@@ -64,6 +66,20 @@ async function openMicrophone(microphone, socket) {
 async function closeMicrophone(microphone) {
   microphone.stop();
   clearInterval(timerInterval);
+  if (displayTimeoutId) {
+    clearTimeout(displayTimeoutId);
+    // Display any remaining buffered transcript
+    if (bufferedTranscript.trim() !== "") {
+      captions.innerHTML = `<span>${bufferedTranscript.trim()}</span>`;
+      const currentTime = formatTime(Math.floor((Date.now() - startTime) / 1000));
+      fullTranscriptText += `[${currentTime}] ${bufferedTranscript.trim()}\n`;
+      document.getElementById("full-transcript").innerText = fullTranscriptText;
+      updateWordCount();
+      const transcriptDiv = document.getElementById("full-transcript");
+      transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+      bufferedTranscript = "";
+    }
+  }
   document.getElementById("timer").innerText = "00:00:00";
 }
 
@@ -109,14 +125,30 @@ window.addEventListener("load", async () => {
       const transcript = data.channel.alternatives[0].transcript;
 
       if (transcript !== "") {
-        captions.innerHTML = transcript ? `<span>${transcript}</span>` : "";
-        const currentTime = formatTime(Math.floor((Date.now() - startTime) / 1000));
-        fullTranscriptText += `[${currentTime}] ${transcript}\n`;
-        document.getElementById("full-transcript").innerText = fullTranscriptText;
-        updateWordCount();
-        // Auto-scroll to bottom
-        const transcriptDiv = document.getElementById("full-transcript");
-        transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+        // Accumulate transcript in buffer
+        bufferedTranscript += transcript + " ";
+
+        // Clear any existing timeout
+        if (displayTimeoutId) {
+          clearTimeout(displayTimeoutId);
+        }
+
+        // Set a new timeout to display after 5 seconds
+        displayTimeoutId = setTimeout(() => {
+          if (bufferedTranscript.trim() !== "") {
+            // Display the buffered transcript
+            captions.innerHTML = `<span>${bufferedTranscript.trim()}</span>`;
+            const currentTime = formatTime(Math.floor((Date.now() - startTime) / 1000));
+            fullTranscriptText += `[${currentTime}] ${bufferedTranscript.trim()}\n`;
+            document.getElementById("full-transcript").innerText = fullTranscriptText;
+            updateWordCount();
+            // Auto-scroll to bottom
+            const transcriptDiv = document.getElementById("full-transcript");
+            transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+            // Reset buffer
+            bufferedTranscript = "";
+          }
+        }, 5000); // 5 seconds delay
       }
     });
 
