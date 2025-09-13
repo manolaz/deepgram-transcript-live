@@ -110,10 +110,13 @@ async function getTempToken() {
 window.addEventListener("load", async () => {
   const token = await getTempToken();
 
+  const modelSelect = document.getElementById("model-select");
+  const selectedModel = modelSelect.value;
+
   const { createClient } = deepgram;
   const _deepgram = createClient({ accessToken: token });
 
-  const socket = _deepgram.listen.live({ model: "nova-3-medical", smart_format: true });
+  const socket = _deepgram.listen.live({ model: selectedModel, smart_format: true });
 
   socket.on("open", async () => {
     console.log("client: connected to websocket");
