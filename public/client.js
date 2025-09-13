@@ -11,7 +11,7 @@ let captionTimeout;
 function addSentence() {
   if (currentTranscript.trim()) {
     fullTranscriptText += currentTranscript.trim() + '\n\n';
-    currentTranscript = "";
+    currentTranscript = " ";
     fullTranscriptEl.textContent = fullTranscriptText;
     updateWordCount();
     fullTranscriptEl.scrollTop = fullTranscriptEl.scrollHeight;
@@ -125,10 +125,19 @@ window.addEventListener("load", async () => {
       const transcript = data.channel.alternatives[0].transcript;
 
       if (transcript) {
+        // Add space between words if necessary to prevent combining
+        if (currentTranscript && !currentTranscript.endsWith(' ') && !transcript.startsWith(' ')) {
+          currentTranscript += ' ';
+        }
         currentTranscript += transcript;
 
         // Update live captions immediately
         captions.textContent = currentTranscript;
+
+        // Update full transcript in real time
+        fullTranscriptEl.textContent = fullTranscriptText + currentTranscript;
+        updateWordCount();
+        fullTranscriptEl.scrollTop = fullTranscriptEl.scrollHeight;
 
         // Clear existing timeout
         if (captionTimeout) clearTimeout(captionTimeout);
